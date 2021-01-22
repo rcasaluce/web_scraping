@@ -1,31 +1,21 @@
-import os
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[ ]:
+
+
 import urllib.request
+from bs4 import BeautifulSoup
+import requests
 import re
 import pandas as pd
-from bs4 import BeautifulSoup
+import numpy as np
+import os
 import time
-import requests
 
 
 BBC_MAIN_URL = 'https://www.bbc.co.uk/'
 current_folder = os.getcwd()
-
-
-def make_directories(folder):
-    #make a new directory to save the images
-    if not os.path.exists(folder):
-        os.makedirs(folder)
-        
-def dataset(index_images_list, categories, names_recipes_list, links_to_recipes, ingredients_plus_quantities, methods, chef_list, images_yes_no,alphabetic_letter, newpathcsv):    
-    list_all = []
-    for i in range(len(links_to_recipes)):
-        
-        
-        new_ls = [categories[i], names_recipes_list[i], links_to_recipes[i] , '; '.join(ingredients_plus_quantities[i]), methods[i], chef_list[i], images_yes_no[i], index_images_list[i]]
-        list_all.append(new_ls)
-    data = pd.DataFrame(list_all, columns = ['category', 'name_recipe', 'links', 'ingred_and_quant', 'descr_method', 'chef', 'images_yes_no', 'index_images'])
-    name_dataset = 'dataset_'+alphabetic_letter.upper()+'.csv'
-    data = data.to_csv(os.path.join(newpathcsv, name_dataset), index = True)
 
 
 def web_scraper_bbc_food(letter = 'a'):
@@ -49,52 +39,51 @@ def web_scraper_bbc_food(letter = 'a'):
     #alphabetic links at the top page
     links_alphabetic = re.findall(r'<ul class="az-keyboard__list">(.*?)</ul>',  respagepData.decode('UTF-8'))
     links_alphabetic = re.findall(r'<a class=.*? href=(.*?)>', str(links_alphabetic))
-    
-    
-    #links = ['/food/recipes/a-z/0-9/1#featured-content']
+
     links_top_page = []
     for i in links_alphabetic:
         links_from_letter = ''.join(('/food/recipes/a-z/', letter ,'/1#featured-content'))
         if i[1:-1] >= links_from_letter:
             links_top_page.append(i)
     
-    print(links_top_page)
+    #print(links_top_page)
     count_recipes_w_images = 0
     count_pages = 1
     for link_top_page in links_top_page:
         
         lk = link_top_page[1:-1]
         url = ''.join((BBC_MAIN_URL,lk))
-        print(url, 'url')
+        #print(url, 'url')
         headers = {'connection':'close','user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36'}
         time.sleep(3)
 
 
         alphabetic_letter = re.findall(r'/food/recipes/a-z/(.*?)/[0-9]+#', lk)
+        
         page = urllib.request.Request(url,headers = headers)
         reqpage = urllib.request.urlopen(page)
         reqpagepData = reqpage.read()
 
-        #links at the bottom page 
-        links_on_index = re.findall(r'<a class="pagination__link gel-pica-bold" href=(.*?)>', reqpagepData.decode('UTF-8'))
-
-
+        #links at the bottom page
         #find the maxiumn number of pages in the alphabetic section of each main pages
+        links_on_index = re.findall(r'<a class="pagination__link gel-pica-bold" href=(.*?)>', reqpagepData.decode('UTF-8'))
+        
         num_pages = []
         for i in links_on_index:
             num = re.findall(r'([0-9]+)#', i)
             num_pages.extend(num)
-            
+        
+        num_pages = np.array(num_pages, dtype=int)
+          
         if len(num_pages) == 0:
             num_max_index = 1
         else:
-            num_max_index = int(max(num_pages))
+            num_max_index = max(num_pages)
 
 
         index_images_list, categories, names_recipes_list, links_to_recipes, ingredients_plus_quantities, methods, chef_list, images_yes_no, = ([]for i in range(8))
 
         for index_link in range(1,num_max_index+1):
-            print(alphabetic_letter,'alphabetic_letter')
             url = ''.join((BBC_MAIN_URL,"food/recipes/a-z/"+alphabetic_letter[0]+"/"+str(index_link)+"#featured-content"))
             headers = {'connection':'close','user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36'}
 
@@ -124,6 +113,7 @@ def web_scraper_bbc_food(letter = 'a'):
                 
 
                 url = link_bbc
+                print(url)
                 headers = {'connection':'close','user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36'}
 
                 time.sleep(3)
@@ -180,6 +170,22 @@ def web_scraper_bbc_food(letter = 'a'):
                 count_recipes_w_images +=1
         count_pages +=1
         dataset(index_images_list, categories, names_recipes_list, links_to_recipes, ingredients_plus_quantities, methods, chef_list, images_yes_no, alphabetic_letter[0],newpathcsv)
+
+        
+def make_directories(folder):
+    #make a new directory to save the new files
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+        
+def dataset(index_images_list, categories, names_recipes_list, links_to_recipes, ingredients_plus_quantities, methods, chef_list, images_yes_no,alphabetic_letter, newpathcsv):    
+    list_all = []
+    for i in range(len(links_to_recipes)):
+        
+        new_ls = [categories[i], names_recipes_list[i], links_to_recipes[i] , '; '.join(ingredients_plus_quantities[i]), methods[i], chef_list[i], images_yes_no[i], index_images_list[i]]
+        list_all.append(new_ls)
+    data = pd.DataFrame(list_all, columns = ['category', 'name_recipe', 'links', 'ingred_and_quant', 'descr_method', 'chef', 'images_yes_no', 'index_images'])
+    name_dataset = 'dataset_'+alphabetic_letter.upper()+'.csv'
+    data = data.to_csv(os.path.join(newpathcsv, name_dataset), index = True)
 
 
 web_scraper_bbc_food('a')    
