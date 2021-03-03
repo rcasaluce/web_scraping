@@ -2,13 +2,13 @@
 
 This is a small script to web scrape all the recipes published on https://www.bbc.co.uk/food/recipes
 
-There are two version of the same script, a .py and a Jupyter versions. 
+There are two version of the same script, a .py and a Jupyter notebook versions. 
 
 This is a small *working-in-progress* project for training purpose.
 
-The recipes are order in alphabetic order and for each of the letters there are more than one pages of recipes. 
+The recipes are order in alphabetic order and for each of the letters of the alphabet, there are more than one pages of recipes. 
 
-The script scrapes any images of the meal, the category of the meal, the ingredients, preparetion, url and chef name. It saves a CSV file of for each letters and all the images are saved in different folder. 
+The script scrapes any images of the meal, the category of the meal, the ingredients, preparation, url and chef name. It saves a CSV file of for each letters and all the images are saved in different folder. 
 
 The main function allows to start the scraping from a specific letter. 
 
